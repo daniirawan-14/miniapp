@@ -248,7 +248,7 @@ document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{ tab=b.datas
 document.querySelectorAll("#tpMode button").forEach(b=>b.onclick=()=>{ tpMode=b.dataset.m; $("tp").value=tpMode==="rr"?"2":""; calc(); });
 document.querySelectorAll("#dirMode button").forEach(b=>b.onclick=()=>{ dir=b.dataset.d; calc(); });
 saveIds.forEach(i=>$(i).addEventListener("input",calc));
-$("inst").addEventListener("change",()=>{ $("fee").value=$("inst").value==="FUT"?"0.05":"0"; calc(); });
+$("inst").addEventListener("change",()=>{ $("fee").value=$("inst").value==="FUT"?"0.025":"0"; calc(); });
 $("reset").onclick=()=>{ ["entry","sl","exit","a1","a2"].forEach(i=>$(i).value=""); $("tp").value=tpMode==="rr"?"2":""; $("pst").textContent=""; calc(); };
 $("copy").onclick=async()=>{
   try{ await navigator.clipboard.writeText(copyTxt); }
