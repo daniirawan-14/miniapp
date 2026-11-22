@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trader Calculator</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --bg: var(--tg-theme-bg-color, #14171c);
+    --card: var(--tg-theme-secondary-bg-color, #1d2229);
+    --text: var(--tg-theme-text-color, #e8ecf1);
+    --hint: var(--tg-theme-hint-color, #8b95a3);
+    --accent: var(--tg-theme-button-color, #2f9e6e);
+    --accent-text: var(--tg-theme-button-text-color, #fff);
+    --loss:#e5534b; --win:#2f9e6e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:16px 16px 32px;background:var(--bg);color:var(--text);
+    font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  h1{font-size:20px;margin:0 0 14px;font-weight:650}
+  .seg{display:flex;gap:6px;margin-bottom:12px}
+  .seg button{flex:1;padding:10px 0;border:0;border-radius:10px;background:var(--card);
+    color:var(--hint);font:inherit;font-weight:600}
+  .seg button.on{background:var(--accent);color:var(--accent-text)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .full{grid-column:1/-1}
+  label{display:block;font-size:13px;color:var(--hint);margin-bottom:4px}
+  input,select{width:100%;padding:12px;border:1px solid transparent;border-radius:10px;
+    background:var(--card);color:var(--text);font:inherit;font-size:17px}
+  input:focus,select:focus{outline:2px solid var(--accent)}
+  .result{margin-top:18px;background:var(--card);border-radius:14px;padding:16px}
+  .size{font-size:34px;font-weight:700;letter-spacing:-.5px}
+  .sizelbl{color:var(--hint);font-size:13px}
+  .row{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid rgba(128,128,128,.2)}
+  .row span:first-child{color:var(--hint)}
+  .loss{color:var(--loss)} .win{color:var(--win)}
+  .err{color:var(--loss);font-size:14px;margin-top:12px;min-height:20px}
+  .side{display:inline-block;padding:2px 10px;border-radius:20px;font-size:13px;font-weight:650;margin-left:8px;vertical-align:middle}
+  .side.long{background:rgba(47,158,110,.18);color:var(--win)}
+  .side.short{background:rgba(229,83,75,.18);color:var(--loss)}
+  .mini{display:flex;gap:6px;margin-bottom:4px}
+  .mini button{flex:1;padding:5px 0;border:0;border-radius:8px;background:var(--card);color:var(--hint);font:inherit;font-size:13px}
+  .mini button.on{background:var(--accent);color:var(--accent-text)}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<h1>Trader Calculator <span id="side"></span></h1>
+
+<div class="seg" id="tabs">
+  <button data-t="risk" class="on">Risk</button>
+  <button data-t="profit">Profit / Loss</button>
+</div>
+
+<div class="grid">
+  <div class="full">
+    <label>Instrumen</label>
+    <select id="inst">
+      <optgroup label="Gold"><option value="XAUUSD">XAUUSD</option></optgroup>
+      <optgroup label="Forex">
+        <option>EURUSD</option><option>GBPUSD</option><option>AUDUSD</option><option>NZDUSD</option>
+        <option>USDJPY</option><option>USDCAD</option><option>USDCHF</option>
+      </optgroup>
+      <optgroup label="Crypto"><option value="FUT">Futures (BTC, ETH, SOL, dll)</option></optgroup>
+    </select>
+  </div>
+
+  <div class="rk"><label>Balance ($)</label><input id="bal" type="number" inputmode="decimal" value="5000"></div>
+  <div class="rk"><label>Risk (%)</label><input id="risk" type="number" inputmode="decimal" value="1" step="0.1"></div>
+
+  <div><label>Entry</label><input id="entry" type="number" inputmode="decimal"></div>
+  <div class="rk"><label>Stop loss</label><input id="sl" type="number" inputmode="decimal"></div>
+
+  <div class="rk full">
+    <div class="mini" id="tpMode">
+      <button data-m="rr" class="on">Target RR</button>
+      <button data-m="price">Target harga</button>
+    </div>
+    <input id="tp" type="number" inputmode="decimal" value="2" step="any">
+  </div>
+
+  <div class="pl"><label>Exit</label><input id="exit" type="number" inputmode="decimal"></div>
+  <div class="pl"><label id="sizeInLbl">Lot</label><input id="sizeIn" type="number" inputmode="decimal" value="0.1" step="any"></div>
+  <div class="pl full">
+    <div class="mini" id="dirMode">
+      <button data-d="long" class="on">Long</button>
+      <button data-d="short">Short</button>
+    </div>
+  </div>
+
+  <div class="full"><label>Leverage (x)</label><input id="lev" type="number" inputmode="decimal" value="100"></div>
+</div>
+
+<div class="err" id="err"></div>
+
+<div class="result" id="out" hidden>
+  <div class="sizelbl" id="sizelbl"></div>
+  <div class="size" id="size"></div>
+  <div id="rows"></div>
+</div>
+
+<script>
+const tg = window.Telegram && Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+const $ = id => document.getElementById(id);
+const fmt = (n,d=2) => n.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const INST = {
+  XAUUSD:{type:"xau"},
+  EURUSD:{type:"fx",base:"EUR",quote:"USD",pip:.0001}, GBPUSD:{type:"fx",base:"GBP",quote:"USD",pip:.0001},
+  AUDUSD:{type:"fx",base:"AUD",quote:"USD",pip:.0001}, NZDUSD:{type:"fx",base:"NZD",quote:"USD",pip:.0001},
+  USDJPY:{type:"fx",base:"USD",quote:"JPY",pip:.01},   USDCAD:{type:"fx",base:"USD",quote:"CAD",pip:.0001},
+  USDCHF:{type:"fx",base:"USD",quote:"CHF",pip:.0001},
+  FUT:{type:"fut"}
+};
+let tab="risk", tpMode="rr", dir="long";
+const saveIds=["inst","bal","risk","entry","sl","tp","exit","sizeIn","lev"];
+
+try{ const s=JSON.parse(localStorage.getItem("tc")||"{}");
+  saveIds.forEach(i=>{ if(s[i]!==undefined) $(i).value=s[i]; });
+  tab=s.tab||tab; tpMode=s.tpMode||tpMode; dir=s.dir||dir; }catch(e){}
+
+// USD per 1 unit harga, per 1 lot (atau per 1 koin) | nilai notional per lot dalam USD
+function spec(k,entry){
+  const i=INST[k];
+  if(i.type==="xau") return {u:100, n:100*entry, unit:"lot", dp:2};
+  if(i.type==="fut") return {u:1, n:entry, unit:"koin", dp:entry>=100?2:4};
+  return {u:100000/(i.quote==="USD"?1:entry), n:100000*(i.base==="USD"?1:entry), unit:"lot", dp:i.pip===.01?3:5};
+}
+const row=(l,v,c="")=>`<div class="row"><span>${l}</span><span class="${c}">${v}</span></div>`;
+const distTxt=(k,d,en,dp)=>{ const i=INST[k];
+  return (i.type==="fx" ? fmt(d/i.pip,1)+" pips" : fmt(d,dp)) + " ("+fmt(d/en*100)+"%)"; };
+
+function ui(){
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===tab));
+  document.querySelectorAll("#tpMode button").forEach(b=>b.classList.toggle("on",b.dataset.m===tpMode));
+  document.querySelectorAll("#dirMode button").forEach(b=>b.classList.toggle("on",b.dataset.d===dir));
+  document.querySelectorAll(".rk").forEach(e=>e.hidden=tab!=="risk");
+  document.querySelectorAll(".pl").forEach(e=>e.hidden=tab!=="profit");
+  const fut=$("inst").value==="FUT";
+  $("sizeInLbl").textContent=fut?"Ukuran (koin)":"Lot";
+  $("tp").placeholder=tpMode==="rr"?"contoh 2":"harga TP";
+  $("tp").step=tpMode==="rr"?"0.1":"any";
+}
+
+function calc(){
+  try{ const s={tab,tpMode,dir}; saveIds.forEach(i=>s[i]=$(i).value); localStorage.setItem("tc",JSON.stringify(s)); }catch(e){}
+  ui();
+  const k=$("inst").value, en=+$("entry").value, lev=+$("lev").value;
+  const out=$("out"), err=$("err"), side=$("side");
+  err.textContent=""; out.hidden=true; side.className="side"; side.textContent="";
+  if(!en) return;
+  const sp=spec(k,en);
+  const setSide=l=>{side.className="side "+(l?"long":"short"); side.textContent=l?"LONG":"SHORT";};
+
+  if(tab==="risk"){
+    const bal=+$("bal").value, rp=+$("risk").value, sl=+$("sl").value, t=+$("tp").value;
+    if(!sl) return;
+    if(sl===en){err.textContent="Entry dan SL tidak boleh sama.";return;}
+    if(!(bal>0)||!(rp>0)){err.textContent="Isi balance dan risk %.";return;}
+    const long=sl<en; setSide(long);
+    const dist=Math.abs(en-sl), riskUsd=bal*rp/100;
+    let tp,rr;
+    if(tpMode==="rr"){ if(!(t>0)) return; rr=t; tp=long?en+dist*rr:en-dist*rr; }
+    else{ if(!t) return;
+      if(long?t<=en:t>=en){err.textContent="TP harus "+(long?"di atas":"di bawah")+" entry untuk posisi "+(long?"long":"short")+".";return;}
+      tp=t; rr=Math.abs(tp-en)/dist; }
+    const size=riskUsd/(dist*sp.u);
+    $("sizelbl").textContent=sp.unit==="lot"?"Lot size":"Ukuran posisi (koin)";
+    $("size").textContent=sp.unit==="lot"?fmt(size,2)+" lot":fmt(size,size<1?4:3);
+    let h=row("Risiko","-$"+fmt(riskUsd),"loss")+row("Jarak SL",distTxt(k,dist,en,sp.dp))
+      +row("Take profit",fmt(tp,sp.dp),"win")+row("RR",fmt(rr)+" : 1")+row("Potensi profit","+$"+fmt(riskUsd*rr),"win")
+      +row("Notional","$"+fmt(size*sp.n));
+    if(lev>0) h+=row("Margin","$"+fmt(size*sp.n/lev));
+    $("rows").innerHTML=h; out.hidden=false;
+  } else {
+    const ex=+$("exit").value, sz=+$("sizeIn").value;
+    if(!ex||!(sz>0)) return;
+    const long=dir==="long"; setSide(long);
+    const diff=(ex-en)*(long?1:-1), pnl=diff*sz*sp.u;
+    $("sizelbl").textContent="Profit / Loss";
+    $("size").innerHTML=`<span class="${pnl>=0?"win":"loss"}">${pnl>=0?"+":"-"}$${fmt(Math.abs(pnl))}</span>`;
+    let h=row("Pergerakan",(diff>=0?"+":"-")+distTxt(k,Math.abs(diff),en,sp.dp),pnl>=0?"win":"loss")
+      +row("Notional","$"+fmt(sz*sp.n));
+    if(lev>0) h+=row("Margin","$"+fmt(sz*sp.n/lev));
+    $("rows").innerHTML=h; out.hidden=false;
+  }
+}
+
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;calc();});
+document.querySelectorAll("#tpMode button").forEach(b=>b.onclick=()=>{tpMode=b.dataset.m;$("tp").value=tpMode==="rr"?"2":"";calc();});
+document.querySelectorAll("#dirMode button").forEach(b=>b.onclick=()=>{dir=b.dataset.d;calc();});
+saveIds.forEach(i=>$(i).addEventListener("input",calc));
+calc();
+</script>
+</body>
+</html>
