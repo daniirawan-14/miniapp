@@ -16,37 +16,48 @@
     --loss:#e5534b; --win:#2f9e6e;
   }
   *{box-sizing:border-box}
-  body{margin:0;padding:16px 16px 32px;background:var(--bg);color:var(--text);
-    font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-  h1{font-size:20px;margin:0 0 14px;font-weight:650}
+  body{margin:0;padding:16px 16px 130px;background:var(--bg);color:var(--text);
+    font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
+  .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  h1{font-size:20px;margin:0;font-weight:650}
+  #reset{border:0;background:var(--card);color:var(--hint);border-radius:10px;padding:8px 14px;font:inherit;font-size:14px}
   .seg{display:flex;gap:6px;margin-bottom:12px}
-  .seg button{flex:1;padding:10px 0;border:0;border-radius:10px;background:var(--card);
-    color:var(--hint);font:inherit;font-weight:600}
+  .seg button{flex:1;padding:10px 0;border:0;border-radius:10px;background:var(--card);color:var(--hint);font:inherit;font-weight:600}
   .seg button.on{background:var(--accent);color:var(--accent-text)}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .full{grid-column:1/-1}
   label{display:block;font-size:13px;color:var(--hint);margin-bottom:4px}
-  input,select{width:100%;padding:12px;border:1px solid transparent;border-radius:10px;
-    background:var(--card);color:var(--text);font:inherit;font-size:17px}
+  input,select{width:100%;padding:12px;border:1px solid transparent;border-radius:10px;background:var(--card);color:var(--text);font:inherit;font-size:17px}
   input:focus,select:focus{outline:2px solid var(--accent)}
-  .result{margin-top:18px;background:var(--card);border-radius:14px;padding:16px}
-  .size{font-size:34px;font-weight:700;letter-spacing:-.5px}
-  .sizelbl{color:var(--hint);font-size:13px}
+  .mini{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+  .mini.top{margin:0 0 8px}
+  .mini button{flex:1;min-width:44px;padding:7px 0;border:0;border-radius:8px;background:var(--card);color:var(--hint);font:inherit;font-size:14px}
+  .mini button.on{background:var(--accent);color:var(--accent-text)}
+  .pst{font-size:12px;color:var(--hint);margin-top:6px;min-height:16px}
+  .err{color:var(--loss);font-size:14px;margin-top:12px;min-height:20px}
+  .result{margin-top:14px;background:var(--card);border-radius:14px;padding:16px}
   .row{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid rgba(128,128,128,.2)}
   .row span:first-child{color:var(--hint)}
   .loss{color:var(--loss)} .win{color:var(--win)}
-  .err{color:var(--loss);font-size:14px;margin-top:12px;min-height:20px}
   .side{display:inline-block;padding:2px 10px;border-radius:20px;font-size:13px;font-weight:650;margin-left:8px;vertical-align:middle}
   .side.long{background:rgba(47,158,110,.18);color:var(--win)}
   .side.short{background:rgba(229,83,75,.18);color:var(--loss)}
-  .mini{display:flex;gap:6px;margin-bottom:4px}
-  .mini button{flex:1;padding:5px 0;border:0;border-radius:8px;background:var(--card);color:var(--hint);font:inherit;font-size:13px}
-  .mini button.on{background:var(--accent);color:var(--accent-text)}
+  .bar{display:flex;gap:2px;height:10px;margin:22px 0 6px}
+  .bar div{border-radius:6px}
+  .bar .r{background:var(--loss)} .bar .w{background:var(--win)}
+  .bt{display:flex;font-size:12px;color:var(--hint);white-space:nowrap}
+  .bt.between{justify-content:space-between;margin-bottom:12px}
+  .bt div{text-align:right}
+  .dock{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--card);border-top:1px solid rgba(128,128,128,.25);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+  .sizelbl{color:var(--hint);font-size:13px}
+  .size{font-size:30px;font-weight:700;letter-spacing:-.5px;line-height:1.15}
+  #copy{border:0;border-radius:12px;background:var(--accent);color:var(--accent-text);font:inherit;font-weight:650;padding:12px 20px}
   [hidden]{display:none!important}
 </style>
 </head>
 <body>
-<h1>Trader Calculator <span id="side"></span></h1>
+<div class="head"><h1>Trader Calculator <span id="side"></span></h1><button id="reset">Reset</button></div>
 
 <div class="seg" id="tabs">
   <button data-t="risk" class="on">Risk</button>
@@ -60,138 +71,193 @@
       <optgroup label="Gold"><option value="XAUUSD">XAUUSD</option></optgroup>
       <optgroup label="Forex">
         <option>EURUSD</option><option>GBPUSD</option><option>AUDUSD</option><option>NZDUSD</option>
-        <option>USDJPY</option><option>USDCAD</option><option>USDCHF</option>
+        <option>USDJPY</option><option>USDCAD</option><option>USDCHF</option><option>EURJPY</option><option>GBPJPY</option>
       </optgroup>
       <optgroup label="Crypto"><option value="FUT">Futures (BTC, ETH, SOL, dll)</option></optgroup>
     </select>
   </div>
 
-  <div class="rk"><label>Balance ($)</label><input id="bal" type="number" inputmode="decimal" value="5000"></div>
-  <div class="rk"><label>Risk (%)</label><input id="risk" type="number" inputmode="decimal" value="1" step="0.1"></div>
+  <div class="full" id="coinBox">
+    <label>Pilih koin (isi Entry otomatis dengan harga live)</label>
+    <div class="mini top" id="coins"></div>
+    <div class="pst" id="pst"></div>
+  </div>
 
-  <div><label>Entry</label><input id="entry" type="number" inputmode="decimal"></div>
-  <div class="rk"><label>Stop loss</label><input id="sl" type="number" inputmode="decimal"></div>
+  <div id="auxA" hidden><label id="a1l">Kurs USDJPY</label><input id="a1" type="number" inputmode="decimal" step="any"></div>
+  <div id="auxB" hidden><label id="a2l">Kurs EURUSD</label><input id="a2" type="number" inputmode="decimal" step="any"></div>
+
+  <div class="rk"><label>Balance ($)</label><input id="bal" type="number" inputmode="decimal" value="5000"></div>
+  <div class="rk"><label>Risk (%)</label><input id="risk" type="number" inputmode="decimal" value="1" step="0.1"><div class="mini" id="riskChips"></div></div>
+
+  <div><label>Entry</label><input id="entry" type="number" inputmode="decimal" step="any"></div>
+  <div class="rk"><label>Stop loss</label><input id="sl" type="number" inputmode="decimal" step="any"></div>
 
   <div class="rk full">
-    <div class="mini" id="tpMode">
-      <button data-m="rr" class="on">Target RR</button>
-      <button data-m="price">Target harga</button>
-    </div>
+    <div class="mini top" id="tpMode"><button data-m="rr" class="on">Target RR</button><button data-m="price">Target harga</button></div>
+    <label id="tpLbl">Risk-reward (contoh 2 = 1:2)</label>
     <input id="tp" type="number" inputmode="decimal" value="2" step="any">
+    <div class="mini" id="rrChips"></div>
   </div>
 
-  <div class="pl"><label>Exit</label><input id="exit" type="number" inputmode="decimal"></div>
+  <div class="pl"><label>Exit</label><input id="exit" type="number" inputmode="decimal" step="any"></div>
   <div class="pl"><label id="sizeInLbl">Lot</label><input id="sizeIn" type="number" inputmode="decimal" value="0.1" step="any"></div>
-  <div class="pl full">
-    <div class="mini" id="dirMode">
-      <button data-d="long" class="on">Long</button>
-      <button data-d="short">Short</button>
-    </div>
-  </div>
+  <div class="pl full"><div class="mini top" id="dirMode"><button data-d="long" class="on">Long</button><button data-d="short">Short</button></div></div>
 
-  <div class="full"><label>Leverage (x)</label><input id="lev" type="number" inputmode="decimal" value="100"></div>
+  <div><label>Fee (% per sisi)</label><input id="fee" type="number" inputmode="decimal" value="0" step="any"></div>
+  <div><label>Leverage (x)</label><input id="lev" type="number" inputmode="decimal" value="100"></div>
 </div>
 
 <div class="err" id="err"></div>
+<div class="result" id="out" hidden><div id="viz"></div><div id="rows"></div></div>
 
-<div class="result" id="out" hidden>
-  <div class="sizelbl" id="sizelbl"></div>
-  <div class="size" id="size"></div>
-  <div id="rows"></div>
+<div class="dock" id="dock" hidden>
+  <div><div class="sizelbl" id="sizelbl"></div><div class="size" id="size"></div></div>
+  <button id="copy">Salin</button>
 </div>
 
 <script>
 const tg = window.Telegram && Telegram.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
-
 const $ = id => document.getElementById(id);
 const fmt = (n,d=2) => n.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const hap = () => { try{ tg.HapticFeedback.impactOccurred("light"); }catch(e){} };
 const INST = {
   XAUUSD:{type:"xau"},
   EURUSD:{type:"fx",base:"EUR",quote:"USD",pip:.0001}, GBPUSD:{type:"fx",base:"GBP",quote:"USD",pip:.0001},
   AUDUSD:{type:"fx",base:"AUD",quote:"USD",pip:.0001}, NZDUSD:{type:"fx",base:"NZD",quote:"USD",pip:.0001},
   USDJPY:{type:"fx",base:"USD",quote:"JPY",pip:.01},   USDCAD:{type:"fx",base:"USD",quote:"CAD",pip:.0001},
   USDCHF:{type:"fx",base:"USD",quote:"CHF",pip:.0001},
+  EURJPY:{type:"fx",base:"EUR",quote:"JPY",pip:.01},   GBPJPY:{type:"fx",base:"GBP",quote:"JPY",pip:.01},
   FUT:{type:"fut"}
 };
-let tab="risk", tpMode="rr", dir="long";
-const saveIds=["inst","bal","risk","entry","sl","tp","exit","sizeIn","lev"];
+const COINS=["BTC","ETH","SOL","SUI","BNB"];
+let tab="risk", tpMode="rr", dir="long", coin="", copyTxt="";
+const saveIds=["inst","bal","risk","entry","sl","tp","exit","sizeIn","lev","fee","a1","a2"];
 
 try{ const s=JSON.parse(localStorage.getItem("tc")||"{}");
   saveIds.forEach(i=>{ if(s[i]!==undefined) $(i).value=s[i]; });
-  tab=s.tab||tab; tpMode=s.tpMode||tpMode; dir=s.dir||dir; }catch(e){}
+  tab=s.tab||tab; tpMode=s.tpMode||tpMode; dir=s.dir||dir; coin=s.coin||""; }catch(e){}
 
-// USD per 1 unit harga, per 1 lot (atau per 1 koin) | nilai notional per lot dalam USD
-function spec(k,entry){
+function chips(id,vals,target,suf){
+  $(id).innerHTML=vals.map(v=>`<button data-v="${v}">${v}${suf}</button>`).join("");
+  $(id).onclick=e=>{ const b=e.target.closest("button"); if(b){ $(target).value=b.dataset.v; calc(); } };
+}
+chips("riskChips",[0.5,1,2],"risk","%");
+chips("rrChips",[1,2,3],"tp","R");
+$("coins").innerHTML=COINS.map(c=>`<button data-c="${c}">${c}</button>`).join("")+`<button data-c="_r">Refresh</button>`;
+$("coins").onclick=e=>{ const b=e.target.closest("button"); if(!b) return;
+  if(b.dataset.c!=="_r") coin=b.dataset.c; if(coin) getPrice(); else $("pst").textContent="Pilih koin dulu."; };
+
+async function getPrice(){
+  const st=$("pst"); st.textContent="Ambil harga "+coin+"...";
+  const urls=[`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${coin}USDT`,`https://api.binance.com/api/v3/ticker/price?symbol=${coin}USDT`];
+  for(const u of urls){ try{
+    const j=await (await fetch(u)).json(), p=parseFloat(j.price);
+    if(p>0){ $("entry").value=p; st.textContent=coin+"USDT "+fmt(p,p>=100?2:4)+" (harga saat "+new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})+")"; calc(); return; }
+  }catch(e){} }
+  st.textContent="Gagal ambil harga, isi Entry manual."; calc();
+}
+
+function spec(k,en){
   const i=INST[k];
-  if(i.type==="xau") return {u:100, n:100*entry, unit:"lot", dp:2};
-  if(i.type==="fut") return {u:1, n:entry, unit:"koin", dp:entry>=100?2:4};
-  return {u:100000/(i.quote==="USD"?1:entry), n:100000*(i.base==="USD"?1:entry), unit:"lot", dp:i.pip===.01?3:5};
+  if(i.type==="xau") return {u:100,n:100*en,unit:"lot",dp:2};
+  if(i.type==="fut") return {u:1,n:en,unit:"koin",dp:en>=100?2:4};
+  const q = i.quote==="USD" ? 1 : (i.base==="USD" ? en : +$("a1").value);
+  const b = i.base==="USD" ? 1 : (i.quote==="USD" ? en : +$("a2").value);
+  return {u:q>0?100000/q:NaN, n:b>0?100000*b:NaN, unit:"lot", dp:i.pip===.01?3:5};
 }
 const row=(l,v,c="")=>`<div class="row"><span>${l}</span><span class="${c}">${v}</span></div>`;
-const distTxt=(k,d,en,dp)=>{ const i=INST[k];
-  return (i.type==="fx" ? fmt(d/i.pip,1)+" pips" : fmt(d,dp)) + " ("+fmt(d/en*100)+"%)"; };
+const distTxt=(k,d,en,dp)=>(INST[k].type==="fx"?fmt(d/INST[k].pip,1)+" pips":fmt(d,dp))+" ("+fmt(d/en*100)+"%)";
+const mark=(id,fn)=>document.querySelectorAll("#"+id+" button").forEach(b=>b.classList.toggle("on",fn(b)));
+
+function viz(long,rr,sl,en,tp,dp){
+  const L=long?sl:tp, R=long?tp:sl, fl=long?1:rr, fr=long?rr:1;
+  return `<div class="bt"><div style="flex:${fl}">Entry ${fmt(en,dp)}</div><div style="flex:${fr}"></div></div>
+  <div class="bar"><div class="${long?"r":"w"}" style="flex:${fl}"></div><div class="${long?"w":"r"}" style="flex:${fr}"></div></div>
+  <div class="bt between"><span>${long?"SL":"TP"} ${fmt(L,dp)}</span><span>${long?"TP":"SL"} ${fmt(R,dp)}</span></div>`;
+}
 
 function ui(){
-  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===tab));
-  document.querySelectorAll("#tpMode button").forEach(b=>b.classList.toggle("on",b.dataset.m===tpMode));
-  document.querySelectorAll("#dirMode button").forEach(b=>b.classList.toggle("on",b.dataset.d===dir));
+  mark("tabs",b=>b.dataset.t===tab); mark("tpMode",b=>b.dataset.m===tpMode); mark("dirMode",b=>b.dataset.d===dir);
+  mark("riskChips",b=>+b.dataset.v===+$("risk").value);
+  mark("rrChips",b=>tpMode==="rr"&&+b.dataset.v===+$("tp").value);
+  mark("coins",b=>b.dataset.c===coin);
   document.querySelectorAll(".rk").forEach(e=>e.hidden=tab!=="risk");
   document.querySelectorAll(".pl").forEach(e=>e.hidden=tab!=="profit");
-  const fut=$("inst").value==="FUT";
-  $("sizeInLbl").textContent=fut?"Ukuran (koin)":"Lot";
-  $("tp").placeholder=tpMode==="rr"?"contoh 2":"harga TP";
-  $("tp").step=tpMode==="rr"?"0.1":"any";
+  const i=INST[$("inst").value], cross=i.type==="fx"&&i.base!=="USD"&&i.quote!=="USD";
+  $("coinBox").hidden=i.type!=="fut"; $("auxA").hidden=$("auxB").hidden=!cross;
+  if(cross){ $("a1l").textContent="Kurs USD"+i.quote; $("a2l").textContent="Kurs "+i.base+"USD"; }
+  $("sizeInLbl").textContent=i.type==="fut"?"Ukuran (koin)":"Lot";
+  $("tpLbl").textContent=tpMode==="rr"?"Risk-reward (contoh 2 = 1:2)":"Harga take profit";
+  $("rrChips").hidden=tpMode!=="rr";
 }
 
 function calc(){
-  try{ const s={tab,tpMode,dir}; saveIds.forEach(i=>s[i]=$(i).value); localStorage.setItem("tc",JSON.stringify(s)); }catch(e){}
+  try{ const s={tab,tpMode,dir,coin}; saveIds.forEach(i=>s[i]=$(i).value); localStorage.setItem("tc",JSON.stringify(s)); }catch(e){}
   ui();
-  const k=$("inst").value, en=+$("entry").value, lev=+$("lev").value;
-  const out=$("out"), err=$("err"), side=$("side");
-  err.textContent=""; out.hidden=true; side.className="side"; side.textContent="";
+  const k=$("inst").value, en=+$("entry").value, lev=+$("lev").value, feeP=+$("fee").value||0;
+  const out=$("out"), dock=$("dock"), err=$("err"), side=$("side");
+  err.textContent=""; out.hidden=dock.hidden=true; side.className="side"; side.textContent=""; copyTxt="";
   if(!en) return;
-  const sp=spec(k,en);
-  const setSide=l=>{side.className="side "+(l?"long":"short"); side.textContent=l?"LONG":"SHORT";};
+  const sp=spec(k,en), nOk=isFinite(sp.n);
+  if(!isFinite(sp.u)){ err.textContent="Isi kurs konversi untuk pair ini di atas."; return; }
+  const setSide=l=>{ side.className="side "+(l?"long":"short"); side.textContent=l?"LONG":"SHORT"; };
+  const tail=(sz)=>{ let h=""; if(nOk){ h+=row("Notional","$"+fmt(sz*sp.n)); if(lev>0) h+=row("Margin","$"+fmt(sz*sp.n/lev)); } return h; };
 
   if(tab==="risk"){
     const bal=+$("bal").value, rp=+$("risk").value, sl=+$("sl").value, t=+$("tp").value;
     if(!sl) return;
-    if(sl===en){err.textContent="Entry dan SL tidak boleh sama.";return;}
-    if(!(bal>0)||!(rp>0)){err.textContent="Isi balance dan risk %.";return;}
+    if(sl===en){ err.textContent="Entry dan SL tidak boleh sama."; return; }
+    if(!(bal>0)||!(rp>0)){ err.textContent="Isi balance dan risk %."; return; }
     const long=sl<en; setSide(long);
     const dist=Math.abs(en-sl), riskUsd=bal*rp/100;
     let tp,rr;
     if(tpMode==="rr"){ if(!(t>0)) return; rr=t; tp=long?en+dist*rr:en-dist*rr; }
     else{ if(!t) return;
-      if(long?t<=en:t>=en){err.textContent="TP harus "+(long?"di atas":"di bawah")+" entry untuk posisi "+(long?"long":"short")+".";return;}
+      if(long?t<=en:t>=en){ err.textContent="TP harus "+(long?"di atas":"di bawah")+" entry untuk posisi "+(long?"long":"short")+"."; return; }
       tp=t; rr=Math.abs(tp-en)/dist; }
     const size=riskUsd/(dist*sp.u);
-    $("sizelbl").textContent=sp.unit==="lot"?"Lot size":"Ukuran posisi (koin)";
-    $("size").textContent=sp.unit==="lot"?fmt(size,2)+" lot":fmt(size,size<1?4:3);
+    const sizeStr=sp.unit==="lot"?fmt(size,2)+" lot":fmt(size,size<1?4:3)+" "+(k==="FUT"?(coin||"koin"):"koin");
+    $("sizelbl").textContent=sp.unit==="lot"?"Lot size":"Ukuran posisi";
+    $("size").textContent=sizeStr;
     let h=row("Risiko","-$"+fmt(riskUsd),"loss")+row("Jarak SL",distTxt(k,dist,en,sp.dp))
-      +row("Take profit",fmt(tp,sp.dp),"win")+row("RR",fmt(rr)+" : 1")+row("Potensi profit","+$"+fmt(riskUsd*rr),"win")
-      +row("Notional","$"+fmt(size*sp.n));
-    if(lev>0) h+=row("Margin","$"+fmt(size*sp.n/lev));
-    $("rows").innerHTML=h; out.hidden=false;
+      +row("Take profit",fmt(tp,sp.dp),"win")+row("RR",fmt(rr)+" : 1")+row("Potensi profit","+$"+fmt(riskUsd*rr),"win");
+    if(nOk&&feeP>0){ const fee=size*sp.n*feeP/100*2; h+=row("Fee (masuk + keluar)","-$"+fmt(fee),"loss")+row("Rugi total di SL","-$"+fmt(riskUsd+fee),"loss"); }
+    h+=tail(size);
+    $("viz").innerHTML=viz(long,rr,sl,en,tp,sp.dp); $("rows").innerHTML=h;
+    copyTxt=`${k==="FUT"?(coin||"Futures"):k} ${long?"LONG":"SHORT"}\nSize: ${sizeStr}\nEntry: ${fmt(en,sp.dp)}\nSL: ${fmt(sl,sp.dp)}\nTP: ${fmt(tp,sp.dp)}\nRisk: $${fmt(riskUsd)} (${rp}%)`;
   } else {
     const ex=+$("exit").value, sz=+$("sizeIn").value;
     if(!ex||!(sz>0)) return;
     const long=dir==="long"; setSide(long);
     const diff=(ex-en)*(long?1:-1), pnl=diff*sz*sp.u;
-    $("sizelbl").textContent="Profit / Loss";
-    $("size").innerHTML=`<span class="${pnl>=0?"win":"loss"}">${pnl>=0?"+":"-"}$${fmt(Math.abs(pnl))}</span>`;
-    let h=row("Pergerakan",(diff>=0?"+":"-")+distTxt(k,Math.abs(diff),en,sp.dp),pnl>=0?"win":"loss")
-      +row("Notional","$"+fmt(sz*sp.n));
-    if(lev>0) h+=row("Margin","$"+fmt(sz*sp.n/lev));
-    $("rows").innerHTML=h; out.hidden=false;
+    let fee=0; if(nOk&&feeP>0) fee=sz*sp.n*feeP/100*2;
+    const net=pnl-fee;
+    $("sizelbl").textContent=fee>0?"Profit / Loss (setelah fee)":"Profit / Loss";
+    $("size").innerHTML=`<span class="${net>=0?"win":"loss"}">${net>=0?"+":"-"}$${fmt(Math.abs(net))}</span>`;
+    let h=row("Pergerakan",(diff>=0?"+":"-")+distTxt(k,Math.abs(diff),en,sp.dp),pnl>=0?"win":"loss");
+    if(fee>0) h+=row("P/L sebelum fee",(pnl>=0?"+":"-")+"$"+fmt(Math.abs(pnl)))+row("Fee (masuk + keluar)","-$"+fmt(fee),"loss");
+    h+=tail(sz);
+    $("viz").innerHTML=""; $("rows").innerHTML=h;
+    copyTxt=`${k==="FUT"?(coin||"Futures"):k} ${long?"LONG":"SHORT"}\nEntry: ${fmt(en,sp.dp)}  Exit: ${fmt(ex,sp.dp)}\nSize: ${sz}\nP/L: ${net>=0?"+":"-"}$${fmt(Math.abs(net))}`;
   }
+  out.hidden=dock.hidden=false;
 }
 
-document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;calc();});
-document.querySelectorAll("#tpMode button").forEach(b=>b.onclick=()=>{tpMode=b.dataset.m;$("tp").value=tpMode==="rr"?"2":"";calc();});
-document.querySelectorAll("#dirMode button").forEach(b=>b.onclick=()=>{dir=b.dataset.d;calc();});
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{ tab=b.dataset.t; calc(); });
+document.querySelectorAll("#tpMode button").forEach(b=>b.onclick=()=>{ tpMode=b.dataset.m; $("tp").value=tpMode==="rr"?"2":""; calc(); });
+document.querySelectorAll("#dirMode button").forEach(b=>b.onclick=()=>{ dir=b.dataset.d; calc(); });
 saveIds.forEach(i=>$(i).addEventListener("input",calc));
+$("inst").addEventListener("change",()=>{ $("fee").value=$("inst").value==="FUT"?"0.05":"0"; calc(); });
+$("reset").onclick=()=>{ ["entry","sl","exit","a1","a2"].forEach(i=>$(i).value=""); $("tp").value=tpMode==="rr"?"2":""; $("pst").textContent=""; calc(); };
+$("copy").onclick=async()=>{
+  try{ await navigator.clipboard.writeText(copyTxt); }
+  catch(e){ const t=document.createElement("textarea"); t.value=copyTxt; document.body.appendChild(t); t.select(); try{document.execCommand("copy");}catch(_){} t.remove(); }
+  $("copy").textContent="Tersalin";
+  try{ tg.HapticFeedback.notificationOccurred("success"); }catch(e){}
+  setTimeout(()=>$("copy").textContent="Salin",1400);
+};
+document.addEventListener("click",e=>{ if(e.target.closest("button")&&e.target.id!=="copy") hap(); });
 calc();
 </script>
 </body>
