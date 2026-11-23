@@ -53,12 +53,30 @@
   .sizelbl{color:var(--hint);font-size:13px}
   .size{font-size:30px;font-weight:700;letter-spacing:-.5px;line-height:1.15}
   #copy{border:0;border-radius:12px;background:var(--accent);color:var(--accent-text);font:inherit;font-weight:650;padding:12px 20px}
+  .card input{background:var(--bg);border:1px solid rgba(128,128,128,.3)}
+  .card{background:var(--card);border-radius:14px;padding:16px;margin-top:12px}
+  .amd{display:flex;align-items:center;gap:14px;margin-top:8px}
+  .ltr{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;flex:none}
+  .cd{font-size:24px;font-weight:650}
+  .prog{height:6px;background:rgba(128,128,128,.25);border-radius:4px;margin-top:12px;overflow:hidden}
+  .prog i{display:block;height:100%;background:var(--accent)}
+  .btn{width:100%;border:0;border-radius:12px;background:var(--accent);color:var(--accent-text);font:inherit;font-weight:650;padding:13px;margin-top:12px}
+  .btn.alt{background:var(--bg);color:var(--text);border:1px solid rgba(128,128,128,.35)}
+  #toJ{border:1px solid rgba(128,128,128,.4);border-radius:12px;background:transparent;color:var(--text);font:inherit;font-weight:600;padding:12px 14px}
+  .del{border:0;background:none;color:var(--hint);font:inherit;font-size:13px;margin-left:10px}
   [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <div class="head"><h1>Trader Calculator <span id="side"></span></h1><button id="reset">Reset</button></div>
 
+<div class="seg" id="views">
+  <button data-v="calc" class="on">Kalkulator</button>
+  <button data-v="amdx">AMDX</button>
+  <button data-v="jur">Jurnal</button>
+</div>
+
+<div id="vCalc">
 <div class="seg" id="tabs">
   <button data-t="risk" class="on">Risk</button>
   <button data-t="profit">Profit / Loss</button>
@@ -110,9 +128,44 @@
 <div class="err" id="err"></div>
 <div class="result" id="out" hidden><div id="viz"></div><div id="rows"></div></div>
 
+</div>
+
+<div id="vAmdx" hidden>
+  <div id="amdxBody"></div>
+  <div class="card"><div style="font-weight:650">Range Accumulation (A)</div>
+    <div class="pst" style="min-height:0">Otomatis dari candle BTCUSDT Perp (Binance Futures). Bisa juga diisi manual.</div>
+    <div id="rangeBox"></div>
+    <button class="btn" id="rAuto">Ambil otomatis (BTCUSDT Perp)</button>
+    <div class="pst" id="rStat"></div>
+    <button class="btn alt" id="rReset">Hapus semua range</button></div>
+  <div class="card"><label>Jam mulai fase harian (WIB, 0-23)</label>
+    <input id="startH" type="number" inputmode="numeric" min="0" max="23" value="0">
+    <div class="pst">Fase harian 6 jam urut A, M, D, X mulai dari jam ini. Kuartal 90 menit mengikuti dari jam yang sama. Mingguan: Sen=A, Sel=M, Rab-Kam=D, Jum=X.</div></div>
+</div>
+
+<div id="vJur" hidden>
+  <div class="card" style="margin-top:0">
+    <div class="grid">
+      <div><label>Pair</label><input id="jPair" type="text" placeholder="XAUUSD" autocapitalize="characters"></div>
+      <div><label>Arah</label><div class="mini" id="jDir" style="margin-top:0"><button data-d="long" class="on">Long</button><button data-d="short">Short</button></div></div>
+      <div><label>Entry</label><input id="jEn" type="number" inputmode="decimal" step="any"></div>
+      <div><label>Stop loss</label><input id="jSl" type="number" inputmode="decimal" step="any"></div>
+      <div><label>Exit</label><input id="jEx" type="number" inputmode="decimal" step="any"></div>
+      <div><label>Hasil ($, minus jika rugi)</label><input id="jPnl" type="number" inputmode="decimal" step="any"></div>
+    </div>
+    <div class="err" id="jErr" style="min-height:0;margin-top:8px"></div>
+    <button class="btn" id="jSave">Simpan trade</button>
+    <div class="pst">Fase AMDX tercatat otomatis dari jam saat lu menyimpan.</div>
+  </div>
+  <div class="card"><div id="jStats"></div></div>
+  <div class="card" id="jTblCard"><div id="jTbl"></div></div>
+  <div class="card"><div class="sizelbl">Trade terakhir</div><div id="jList"></div>
+    <button class="btn alt" id="jExport">Salin semua data</button></div>
+</div>
+
 <div class="dock" id="dock" hidden>
   <div><div class="sizelbl" id="sizelbl"></div><div class="size" id="size"></div></div>
-  <button id="copy">Salin</button>
+  <div style="display:flex;gap:8px"><button id="toJ">Jurnal</button><button id="copy">Salin</button></div>
 </div>
 
 <script>
@@ -197,7 +250,7 @@ function calc(){
   ui();
   const k=$("inst").value, en=+$("entry").value, lev=+$("lev").value, feeP=+$("fee").value||0;
   const out=$("out"), dock=$("dock"), err=$("err"), side=$("side");
-  err.textContent=""; out.hidden=dock.hidden=true; side.className="side"; side.textContent=""; copyTxt="";
+  err.textContent=""; out.hidden=dock.hidden=true; side.className="side"; side.textContent=""; copyTxt=""; lastCalc=null;
   if(!en) return;
   const sp=spec(k,en), nOk=isFinite(sp.n);
   if(!isFinite(sp.u)){ err.textContent="Isi kurs konversi untuk pair ini di atas."; return; }
@@ -226,6 +279,7 @@ function calc(){
     h+=tail(size);
     $("viz").innerHTML=viz(long,rr,sl,en,tp,sp.dp); $("rows").innerHTML=h;
     copyTxt=`${k==="FUT"?(coin||"Futures"):k} ${long?"LONG":"SHORT"}\nSize: ${sizeStr}\nEntry: ${fmt(en,sp.dp)}\nSL: ${fmt(sl,sp.dp)}\nTP: ${fmt(tp,sp.dp)}\nRisk: $${fmt(riskUsd)} (${rp}%)`;
+    lastCalc={k:(k==="FUT"?(coin||"FUT"):k),long,en,sl,ex:"",pnl:""};
   } else {
     const ex=+$("exit").value, sz=+$("sizeIn").value;
     if(!ex||!(sz>0)) return;
@@ -240,8 +294,9 @@ function calc(){
     h+=tail(sz);
     $("viz").innerHTML=""; $("rows").innerHTML=h;
     copyTxt=`${k==="FUT"?(coin||"Futures"):k} ${long?"LONG":"SHORT"}\nEntry: ${fmt(en,sp.dp)}  Exit: ${fmt(ex,sp.dp)}\nSize: ${sz}\nP/L: ${net>=0?"+":"-"}$${fmt(Math.abs(net))}`;
+    lastCalc={k:(k==="FUT"?(coin||"FUT"):k),long,en,sl:"",ex,pnl:net.toFixed(2)};
   }
-  out.hidden=dock.hidden=false;
+  out.hidden=false; dock.hidden=view!=="calc";
 }
 
 document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{ tab=b.dataset.t; calc(); });
@@ -258,6 +313,152 @@ $("copy").onclick=async()=>{
   setTimeout(()=>$("copy").textContent="Salin",1400);
 };
 document.addEventListener("click",e=>{ if(e.target.closest("button")&&e.target.id!=="copy") hap(); });
+// ===== Views =====
+let view="calc", lastCalc=null;
+function setView(v){
+  view=v; mark("views",b=>b.dataset.v===v);
+  $("vCalc").hidden=v!=="calc"; $("vAmdx").hidden=v!=="amdx"; $("vJur").hidden=v!=="jur";
+  $("reset").hidden=v!=="calc"; $("side").hidden=v!=="calc";
+  if(v==="calc") calc(); else $("dock").hidden=true;
+  if(v==="amdx"){ drawAmdx(); autoRange(); } if(v==="jur") drawJur();
+}
+document.querySelectorAll("#views button").forEach(b=>b.onclick=()=>setView(b.dataset.v));
+
+// ===== AMDX =====
+const NAMES={A:"Accumulation",M:"Manipulation",D:"Distribution",X:"eXpansion","-":"Weekend (libur)"};
+const COL={A:"#5b8def",M:"#e0a030",D:"#e5534b",X:"#2f9e6e","-":"#6b7685"};
+let startH=0; try{ startH=+(JSON.parse(localStorage.getItem("tcs")||"{}").h)||0; }catch(e){}
+$("startH").value=startH;
+$("startH").addEventListener("input",()=>{
+  startH=Math.min(23,Math.max(0,Math.floor(+$("startH").value||0)));
+  try{ localStorage.setItem("tcs",JSON.stringify({h:startH})); }catch(e){}
+  drawAmdx();
+});
+function phases(ts=Date.now()){
+  const t=new Date(ts+7*3600000), day=t.getUTCDay();
+  const msDay=((t.getUTCHours()*60+t.getUTCMinutes())*60+t.getUTCSeconds())*1000+t.getUTCMilliseconds();
+  const WK={1:["A",1],2:["M",1],3:["D",2],4:["D",1],5:["X",1],6:["-",2],0:["-",1]};
+  const SPAN={A:1,M:1,D:2,X:1,"-":2};
+  const [wk,dte]=WK[day], wkRem=dte*864e5-msDay, wkTot=SPAN[wk]*864e5;
+  const wkNext={A:"M",M:"D",D:"X",X:"-","-":"A"}[wk];
+  const m=(((msDay-startH*3600000)%864e5)+864e5)%864e5;
+  const di=Math.floor(m/216e5), dy="AMDX"[di], dyRem=216e5-m%216e5;
+  const qm=m%216e5, qi=Math.floor(qm/54e5), qt="AMDX"[qi], qtRem=54e5-qm%54e5;
+  return {t,day,wk,wkRem,wkNext,wkP:1-wkRem/wkTot,dy,dyRem,dyNext:"AMDX"[(di+1)%4],dyP:1-dyRem/216e5,qt,qtRem,qtNext:"AMDX"[(qi+1)%4],qtP:1-qtRem/54e5};
+}
+const hms=ms=>{ ms=Math.max(0,Math.floor(ms/1000)); const d=Math.floor(ms/86400),h=Math.floor(ms%86400/3600),m=Math.floor(ms%3600/60),s=ms%60;
+  return (d?d+"d ":"")+String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"); };
+const acard=(title,l,rem,next,pr)=>`<div class="card"><div class="sizelbl">${title}</div>
+  <div class="amd"><div class="ltr" style="background:${COL[l]}">${l==="-"?"·":l}</div>
+  <div><div style="font-weight:650">${NAMES[l]}</div><div class="cd">${hms(rem)}</div></div></div>
+  <div class="prog"><i style="width:${(pr*100).toFixed(1)}%"></i></div>
+  <div class="sizelbl" style="margin-top:6px">Berikutnya: ${NAMES[next]}</div></div>`;
+function drawAmdx(){
+  const p=phases(), t=p.t, z=n=>String(n).padStart(2,"0");
+  const DN=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+  $("amdxBody").innerHTML=`<div class="sizelbl">${DN[p.day]}, ${z(t.getUTCHours())}:${z(t.getUTCMinutes())}:${z(t.getUTCSeconds())} WIB</div>`
+    +acard("Mingguan",p.wk,p.wkRem,p.wkNext,p.wkP)+acard("Harian (6 jam)",p.dy,p.dyRem,p.dyNext,p.dyP)+acard("Kuartal (90 menit)",p.qt,p.qtRem,p.qtNext,p.qtP);
+}
+setInterval(()=>{ if(view==="amdx") drawAmdx(); },1000);
+
+// ===== Range A (Low / High) =====
+const RL=[["wk","Mingguan"],["dy","Harian"],["qt","Kuartal"]];
+let R={}; try{ R=JSON.parse(localStorage.getItem("tcr")||"{}"); }catch(e){}
+const saveR=()=>{ try{ localStorage.setItem("tcr",JSON.stringify(R)); }catch(e){} };
+function drawRange(){
+  RL.forEach(([k])=>{ const lo=parseFloat((R[k]||{}).lo), hi=parseFloat((R[k]||{}).hi), el=$("rs_"+k);
+    if(isFinite(lo)&&isFinite(hi)&&hi>lo){ const dp=hi>=100?2:4; el.textContent="Range "+fmt(hi-lo,dp)+" · Mid "+fmt((hi+lo)/2,dp); }
+    else el.textContent=(isFinite(lo)&&isFinite(hi))?"High harus lebih besar dari Low.":""; });
+}
+$("rangeBox").innerHTML=RL.map(([k,n])=>`<div style="margin-top:14px"><div class="sizelbl">${n}</div>
+  <div class="grid"><div><label>Low A</label><input data-k="${k}" data-f="lo" type="number" inputmode="decimal" step="any" value="${(R[k]||{}).lo??""}"></div>
+  <div><label>High A</label><input data-k="${k}" data-f="hi" type="number" inputmode="decimal" step="any" value="${(R[k]||{}).hi??""}"></div></div>
+  <div class="pst" id="rs_${k}"></div></div>`).join("");
+$("rangeBox").addEventListener("input",e=>{ const t=e.target; if(!t.dataset.k) return;
+  (R[t.dataset.k]=R[t.dataset.k]||{})[t.dataset.f]=t.value; saveR(); drawRange(); });
+$("rReset").onclick=()=>{ R={}; saveR(); $("rangeBox").querySelectorAll("input").forEach(i=>i.value=""); drawRange(); };
+drawRange();
+
+function aWindows(now=Date.now()){
+  const W=7*3600000, D=864e5, t=now+W, mid=Math.floor(t/D)*D;
+  const m=(((t-mid-startH*3600000)%D)+D)%D, cyc=now-m, bi=Math.floor(m/216e5);
+  const back=(new Date(t).getUTCDay()+6)%7, wkS=mid-back*D-W, qtS=cyc+bi*216e5;
+  return {wk:[wkS,wkS+D,"15m"], dy:[cyc,cyc+216e5,"5m"], qt:[qtS,qtS+54e5,"1m"]};
+}
+async function klRange(s,e,iv){
+  const end=Math.min(e,Date.now());
+  const r=await fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=${iv}&startTime=${s}&endTime=${end}&limit=1500`);
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  const j=await r.json(); if(!Array.isArray(j)||!j.length) throw new Error("data kosong");
+  return {hi:Math.max(...j.map(c=>+c[2])), lo:Math.min(...j.map(c=>+c[3]))};
+}
+let rBusy=false;
+async function autoRange(){
+  if(rBusy) return; rBusy=true;
+  const st=$("rStat"), btn=$("rAuto"); st.textContent="Mengambil data BTCUSDT Perp..."; btn.disabled=true;
+  try{
+    const w=aWindows(), now=Date.now(), live=[];
+    const res=await Promise.all(RL.map(([k])=>klRange(w[k][0],w[k][1],w[k][2])));
+    RL.forEach(([k,n],i)=>{ R[k]={lo:String(res[i].lo),hi:String(res[i].hi)}; if(now<w[k][1]) live.push(n); });
+    saveR();
+    $("rangeBox").querySelectorAll("input").forEach(i=>{ i.value=R[i.dataset.k][i.dataset.f]; });
+    drawRange();
+    const tm=new Date(now+7*3600000), z=n=>String(n).padStart(2,"0");
+    st.textContent="BTCUSDT Perp, "+z(tm.getUTCHours())+":"+z(tm.getUTCMinutes())+" WIB."+(live.length?" A masih berjalan: "+live.join(", ")+".":"");
+  }catch(e){ st.textContent="Gagal ambil data Binance ("+((e&&e.message)||"error")+"). Isi manual."; }
+  btn.disabled=false; rBusy=false;
+}
+$("rAuto").onclick=autoRange;
+
+// ===== Jurnal =====
+let J=[]; try{ J=JSON.parse(localStorage.getItem("tcj")||"[]"); }catch(e){}
+const saveJ=()=>{ try{ localStorage.setItem("tcj",JSON.stringify(J)); }catch(e){} };
+let jDir="long";
+$("jDir").onclick=e=>{ const b=e.target.closest("button"); if(b){ jDir=b.dataset.d; mark("jDir",x=>x.dataset.d===jDir); } };
+const money=v=>(v>=0?"+":"-")+"$"+fmt(Math.abs(v));
+function agg(a){ const n=a.length, w=a.filter(x=>x.pnl>0).length, pnl=a.reduce((s,x)=>s+x.pnl,0), rs=a.filter(x=>x.r!=null).map(x=>x.r);
+  return {n,wr:n?w/n*100:0,pnl,ar:rs.length?rs.reduce((s,x)=>s+x,0)/rs.length:null}; }
+const grp=(key,ls)=>ls.map(l=>{ const a=agg(J.filter(x=>x[key]===l)); return a.n?row(NAMES[l]+" ("+a.n+")",`${fmt(a.wr,0)}% · <span class="${a.pnl>=0?"win":"loss"}">${money(a.pnl)}</span>`):""; }).join("");
+function drawJur(){
+  const a=agg(J);
+  $("jStats").innerHTML=J.length
+    ? row("Total trade",a.n)+row("Win rate",fmt(a.wr,0)+"%")+row("Rata-rata R",a.ar==null?"-":fmt(a.ar)+"R")+row("Total PnL",`<span class="${a.pnl>=0?"win":"loss"}">${money(a.pnl)}</span>`)
+    : `<div class="pst">Belum ada trade. Catat trade pertama lu di atas.</div>`;
+  $("jTblCard").hidden=!J.length;
+  $("jTbl").innerHTML=J.length?`<div class="sizelbl">Per fase harian (win rate · PnL)</div>`+grp("dy",["A","M","D","X"])
+    +`<div class="sizelbl" style="margin-top:12px">Per fase mingguan</div>`+grp("wk",["A","M","D","X","-"]):"";
+  const z=n=>String(n).padStart(2,"0");
+  $("jList").innerHTML=J.map((x,i)=>{ const d=new Date(x.t+7*3600000);
+    return `<div class="row"><span>${z(d.getUTCDate())}/${z(d.getUTCMonth()+1)} ${z(d.getUTCHours())}:${z(d.getUTCMinutes())} ${x.pair} ${x.long?"L":"S"} <small>${x.dy}</small></span>
+    <span class="${x.pnl>=0?"win":"loss"}">${money(x.pnl)}<button class="del" data-i="${i}">Hapus</button></span></div>`; }).reverse().slice(0,15).join("");
+}
+$("jSave").onclick=()=>{
+  const pair=$("jPair").value.trim().toUpperCase(), en=+$("jEn").value, sl=+$("jSl").value, ex=+$("jEx").value, pnl=parseFloat($("jPnl").value);
+  if(!pair||!isFinite(pnl)){ $("jErr").textContent="Isi pair dan hasil ($)."; return; }
+  $("jErr").textContent="";
+  const long=jDir==="long", p=phases();
+  const r=(en&&sl&&ex&&en!==sl)?(ex-en)*(long?1:-1)/Math.abs(en-sl):null;
+  J.push({t:Date.now(),pair,long,en,sl,ex,pnl,r,wk:p.wk,dy:p.dy,qt:p.qt});
+  saveJ(); ["jEn","jSl","jEx","jPnl"].forEach(i=>$(i).value="");
+  try{ tg.HapticFeedback.notificationOccurred("success"); }catch(e){}
+  drawJur();
+};
+$("jList").onclick=e=>{ const b=e.target.closest(".del"); if(!b) return;
+  if(b.dataset.ok){ J.splice(+b.dataset.i,1); saveJ(); drawJur(); }
+  else{ b.dataset.ok="1"; b.textContent="Yakin?"; b.style.color="var(--loss)"; } };
+$("jExport").onclick=async()=>{
+  const lines=["tanggal,pair,arah,entry,sl,exit,pnl,R,mingguan,harian,kuartal"].concat(J.map(x=>
+    [new Date(x.t+7*3600000).toISOString().slice(0,16).replace("T"," "),x.pair,x.long?"L":"S",x.en||"",x.sl||"",x.ex||"",x.pnl,x.r==null?"":x.r.toFixed(2),x.wk,x.dy,x.qt].join(",")));
+  const txt=lines.join("\n");
+  try{ await navigator.clipboard.writeText(txt); }
+  catch(e){ const t=document.createElement("textarea"); t.value=txt; document.body.appendChild(t); t.select(); try{document.execCommand("copy");}catch(_){} t.remove(); }
+  $("jExport").textContent="Tersalin"; setTimeout(()=>$("jExport").textContent="Salin semua data",1400);
+};
+$("toJ").onclick=()=>{ if(!lastCalc) return;
+  $("jPair").value=lastCalc.k; jDir=lastCalc.long?"long":"short"; mark("jDir",x=>x.dataset.d===jDir);
+  $("jEn").value=lastCalc.en||""; $("jSl").value=lastCalc.sl||""; $("jEx").value=lastCalc.ex||""; $("jPnl").value=lastCalc.pnl||"";
+  setView("jur"); };
+
 calc();
 </script>
 </body>
